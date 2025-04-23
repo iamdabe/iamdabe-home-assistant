@@ -4,4 +4,4 @@ This is a collection of my custom card templates for [custom:button-card]([https
 ## Contents
 | Name | Preview | Description |
 |  ---  |  ---  |  ---  |
-| [hourly-forecast](./hourly-forecast/) | ![example](example-default.png) | Generates an SVG from the weather forecast
+| [hourly-forecast](./hourly-forecast/) | ![example](./hourly-forecast/example-default.png) | Generates an SVG from the weather forecast
