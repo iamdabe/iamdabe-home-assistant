@@ -106,13 +106,13 @@ card_mod:
 ```
 
 ## Notes
-**Home Assistant Sections Support**
+####Home Assistant Sections Support####
 If you're using sections there is a bug in button-card which means it doesn't play nicely. To support sections and grid_options install card_mod and use the code below: 
 
-**Hour Slices & Groups**
+####Hour Slices & Groups####
 You can mix-and match the size of the card and the grouping. `hour_slice` is the number of groups to show and `hour_group` is how many hours in each slice. The car will determin the min/max temperature and will attempt to show the highest or lowest temperature for the given slice.
 
-**Home Assistant Weather Popup**
+####Home Assistant Weather Popup####
 If you want the built in weather popup to show when clicking the card add your weather provider as the entity when you configure your card
 ```
 type: custom:button-card
@@ -122,10 +122,10 @@ variables:
   weather_forecast: sensor.weather_forecast_hourly
 ```
 
-**Forecast Conditions**
+####Forecast Conditions####
 Forecast conditions are matched based on the text. Not all weather providers have the same list, you can edit the list the `weathericon_map` function to match an icon against a specific forecast. 
 
-**Weather providers JSON**
+####Weather providers JSON####
 Again, not all weather providers are equal. Some don't provide all entities in their forecast. These are the keys required to be returned for full functionality.
 
 | Key | Type | Description |
