@@ -1,0 +1,263 @@
+button_card_templates:
+  hourly-forecast:
+    variables:
+      weather_forecast: null
+      width: 300
+      height: 110
+      hour_slices: 5
+      hour_group: 3
+      icon_base: /local/weather/
+    show_label: false
+    show_state: false
+    show_name: false
+    show_icon: false
+    triggers_update:
+      - '[[[ return variables.weather_forecast; ]]]'
+    styles:
+      card:
+        - padding: 16px
+        - text-align: left
+        - height: 100%
+        - font-size: var(--paper-font-body1)
+      grid:
+        - grid-template-columns: 1fr auto
+        - grid-template-areas: |
+            "weather"
+        - justify-items: center
+      custom_fields:
+        weather:
+          - justify-items: center
+    custom_fields:
+      weather: |
+        [[[
+          const hourlyForecastData = states[variables.weather_forecast].attributes.forecast || [];
+          const width = variables.width || 300;
+          const height = variables.height || 110;  
+          const hour_slices = variables.hour_slices || 5;
+          const hour_group = variables.hour_group || 3;
+          const icon_base = variables.icon_base || '/local/weather/';
+          const paddingVertical = 30;
+          const paddingHorizontal = 0;
+          const paddingLabelHorizontal = 25;
+          
+          const weathericon_map = {
+             'clear-night': `ClearNightV3.svg`,
+             'cloudy': `CloudyV3.svg`,
+             'very-cloudy': `CloudyV3.svg`,
+             'averses-faibles': `CloudyV3.svg`,
+             'exceptional': `SunnyDayV3.svg`,
+             'fog': `CloudyV3.svg`,
+             'hazy-sky': `CloudyV3.svg`,
+             'hail': `HeavySnowV2.svg`,
+             'lightning': `Thunderstorm.svg`,
+             'lightning-rainy': `Thunderstorm.svg`,
+             'partlycloudy': `MostlySunnyDay.svg`,
+             'pouring': `ModerateRainV2.svg`,
+             'slight-rain': `LightRainV3.svg`, 
+             'scattered-rain': `LightRainV3.svg`, 
+             'few-showers': `LightRainV3.svg`,
+             'slight-showers': `LightRainV3.svg`,
+             'rainy': `LightRainV3.svg`,
+             'snowy': `LightSnowV2.svg`,
+             'snowy-rainy': `RainSnowV2.svg`,
+             'sunny': `SunnyDayV3.svg`,
+             'ciel-clair': `SunnyDayV3.svg`,
+             'windy': `WindyV2.svg`,
+             'windy-variant': `WindyV2.svg`
+          };
+            
+          const { groupedValues, allValues } = prepareValues(hourlyForecastData);
+          
+          function prepareValues(data, count = hour_slices, step = hour_group) {
+            step = Math.max(1, step);
+            count = Math.max(1, count); // optional
+
+            const currentHour = new Date();
+            currentHour.setMinutes(0, 0, 0);
+
+            const futureForecasts = data.filter(entry => new Date(entry.datetime) >= currentHour);
+            if (futureForecasts.length === 0) return { groupedValues: [], allValues: [] };
+
+            const temperatures = futureForecasts.map(entry => entry.temperature);
+            const minTemp = Math.min(...temperatures);
+            const maxTemp = Math.max(...temperatures);
+
+            const groupedValues = [];
+            let lastUsedTime = null;
+
+            for (let i = 0; i < futureForecasts.length && groupedValues.length < count; i += step) {
+              const forecastSlice = futureForecasts.slice(i, i + step);
+              if (forecastSlice.length === 0) continue;
+
+              let selectedEntry = forecastSlice[0];
+              let temperatureEntry = selectedEntry;
+              let closestExtremity = Math.min(
+                Math.abs(selectedEntry.temperature - minTemp),
+                Math.abs(selectedEntry.temperature - maxTemp)
+              );
+
+              for (let j = 1; j < forecastSlice.length; j++) {
+                const entry = forecastSlice[j];
+                const extremity = Math.min(
+                  Math.abs(entry.temperature - minTemp),
+                  Math.abs(entry.temperature - maxTemp)
+                );
+
+                if (extremity < closestExtremity) {
+                  temperatureEntry = entry;
+                  closestExtremity = extremity;
+                }
+              }
+
+              const maxPrecip = Math.max(...forecastSlice.map(e => e.precipitation_probability));
+              lastUsedTime = new Date(forecastSlice[forecastSlice.length - 1].datetime);
+
+              groupedValues.push({
+                time: new Date(selectedEntry.datetime).toLocaleTimeString([], { hour: 'numeric', hour12: true }),
+                temperature: temperatureEntry.temperature,
+                precipitation: maxPrecip > 50 ? 1 : 0,
+                condition: selectedEntry.condition
+              });
+            }
+
+            const allValues = futureForecasts.filter(entry => new Date(entry.datetime) <= lastUsedTime);
+
+            return { groupedValues, allValues };
+          }
+
+          const minTemp = Math.min(...allValues.map(v => v.temperature));
+          const maxTemp = Math.max(...allValues.map(v => v.temperature));
+          const scaleY = temp => height - paddingVertical - ((temp - minTemp) / (maxTemp - minTemp)) * (height - 2 * paddingVertical);
+          const scaleX = i => paddingHorizontal + (i / (allValues.length - 1)) * (width - 2 * paddingHorizontal);
+          const xScale = i => paddingLabelHorizontal + (i / (groupedValues.length - 1)) * (width - 2 * paddingLabelHorizontal);
+
+          function buildDefs() {
+            const stops = [
+              { value: 1, color: '#2c7bb6' },
+              { value: 5, color: '#00a6ca' },
+              { value: 10, color: '#ffffbf' },
+              { value: 15, color: '#fdae61' },
+              { value: 20, color: '#d7191c' }
+            ];
+
+            const gradientStops = stops.map(stop => {
+              const offset = ((stop.value - minTemp) / (maxTemp - minTemp)) * 100;
+              return `<stop offset="${offset}%" stop-color="${stop.color}" />`;
+            }).join('\n');
+
+            return `
+              <defs>
+                <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#000000AA" />
+                </filter>
+                <linearGradient id="valueGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                  ${gradientStops}
+                </linearGradient>
+                ${buildMask()}
+              </defs>
+            `;
+          }
+
+          function buildPath() {
+            let d = '';
+            allValues.forEach((v, i) => {
+              const x = scaleX(i);
+              const y = scaleY(v.temperature);
+              if (i === 0) {
+                d += `M${x},${y}`;
+              } else {
+                const prevX = scaleX(i - 1);
+                const prevY = scaleY(allValues[i - 1].temperature);
+                const cx1 = prevX + (x - prevX) / 2;
+                const cy1 = prevY;
+                const cx2 = x - (x - prevX) / 2;
+                const cy2 = y;
+                d += ` C${cx1},${cy1} ${cx2},${cy2} ${x},${y}`;
+              }
+            });
+            return `<path d="${d}" fill="none" stroke="url(#valueGradient)" stroke-width="4" filter="url(#dropShadow)" />`;
+          }
+
+          function buildMask() {
+            let d = '';
+            const areaBottom = height; // Bottom of the chart
+
+            allValues.forEach((v, i) => {
+              const x = scaleX(i);
+              const y = scaleY(v.temperature);
+              if (i === 0) {
+                d += `M${x},${areaBottom} L${x},${y}`;
+              } else {
+                const prevX = scaleX(i - 1);
+                const prevY = scaleY(allValues[i - 1].temperature);
+                const cx1 = prevX + (x - prevX) / 2;
+                const cy1 = prevY;
+                const cx2 = x - (x - prevX) / 2;
+                const cy2 = y;
+                d += ` C${cx1},${cy1} ${cx2},${cy2} ${x},${y}`;
+              }
+            });
+
+            // Close the path down to the bottom right, then across and back up
+            const lastX = scaleX(allValues.length - 1);
+            d += ` L${lastX},${areaBottom} Z`;
+
+            return `
+              <mask id="tempPathMask">
+                <rect width="100%" height="100%" fill="black"/>
+                <path d="${d}" fill="white" />
+              </mask>
+            `;
+          }
+
+          function buildPrecipitationBlocks() {
+            const barGap = 2; // Gap between each bar
+            return allValues.map((v, i) => {
+              const x = scaleX(i);
+              const nextX = i < allValues.length - 1 ? scaleX(i + 1) : scaleX(i) + 10;
+              const width = nextX - x - barGap;
+              const barX = x + barGap / 2;
+              const heightBlock = height - (paddingVertical + 10 * 2);
+
+              let opacity = 0;
+              if (v.precipitation_probability > 0) {
+                opacity = 0.1 + (v.precipitation_probability / 100) * 0.2;
+              }
+
+              return `<rect x="${barX}" y="${paddingVertical - 5}" width="${width}" height="${heightBlock}" fill="#0066ff" opacity="${opacity.toFixed(2)}" mask="url(#tempPathMask)" />`;
+            }).join('\n');
+          }
+
+          function buildIcons() {
+            return groupedValues.map((v, i) => {
+              const iconHref = `${icon_base}${weathericon_map[v.condition]}`;
+              const x = xScale(i) - 12;
+              const y = height / 2 - 12;
+              return `<image href="${iconHref}" x="${x}" y="${y}" width="24" height="24" />`;
+            }).join('\n');
+          }
+
+          function buildLabels() {
+            return groupedValues.map((v, i) => {
+              const x = xScale(i);
+              return `
+                <text x="${x}" y="15" text-anchor="middle" font-size="12px" style="fill: var(--primary-text-color);">${v.time}</text>
+                <text x="${x}" y="${height - 5}" text-anchor="middle" font-size="14px" font-weight="bold" style="fill: var(--primary-text-color);">${v.temperature}°</text>
+              `;
+            }).join('\n');
+          }
+
+          const svgOutput = [
+            buildDefs(),
+            buildPrecipitationBlocks(),
+            buildPath(),
+            buildIcons(),
+            buildLabels()
+          ].join('\n');
+
+          return `
+            <svg style="max-width:100%" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+              ${svgOutput}
+            </svg>
+          `.trim();
+        ]]]

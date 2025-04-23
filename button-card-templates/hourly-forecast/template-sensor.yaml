@@ -1,0 +1,19 @@
+# Weather forecast template sensor. Trigger updates every hour.
+template:
+  - trigger:
+      - platform: time_pattern
+        hours: /1    
+    action:
+      - service: weather.get_forecasts
+        data:
+          type: hourly
+        target:
+          entity_id: weather.seytroux
+        response_variable: hourly
+     
+    sensor:
+      - name: Weather forecast hourly
+        unique_id: weather_forecast_hourly
+        state: "{{ hourly['weather.seytroux'].forecast[0].condition }}"
+        attributes:
+            forecast: "{{ hourly['weather.seytroux'].forecast }}"
