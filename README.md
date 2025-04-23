@@ -1,6 +1,5 @@
-
 # iamdabe-home-assistant
-This is my home assistant configuration. Right now I'm just sharign my button card templates. 
+This is my home assistant configuration. Right now I'm just sharing my button card templates. 
 
 ## Contents
 - `button-card-templates` - custom button card templates
