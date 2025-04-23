@@ -29,8 +29,10 @@ This is a custom button card template that generates an SVG by looping through t
 6. Admire your new hourly weather chart!
 
 ## Examples
-#### Default Configuration
+**Default Configuration**
+
 ![example](example-default.png)
+
 ```
 type: custom:button-card
 template: weather_hourly
@@ -41,7 +43,9 @@ card_mod:
     :host {height: 100% !important;}
 ```
 **5 Hour Forecast** *Small*
+
 ![example](example-5hr.png)
+
 ```
 type: custom:button-card
 template: weather_hourly
@@ -60,7 +64,9 @@ card_mod:
 ```
 
 **12 Hour Forecast** *Medium*
+
 ![example](example-12hr.png)
+
 ```
 type: custom:button-card
 template: weather_hourly
@@ -79,7 +85,9 @@ card_mod:
 ```
 
 **24 Hour Forecast** *Large*
+
 ![example](example-24hr.png)
+
 ```
 type: custom:button-card
 template: weather_hourly
@@ -119,11 +127,12 @@ Forecast conditions are matched based on the text. Not all weather providers hav
 
 **Weather providers JSON**
 Again, not all weather providers are equal. Some don't provide all entities in their forecast. These are the keys required to be returned for full functionality.
-| Key| Type | Description |
+
+| Key | Type | Description |
 | --- | --- |  --- | --- |
-| temperature| *decimal* | |
-|condition | *string* | Short weather description |
-|precipitation_probability | *decimal* | 0-100% |
+| temperature| *decimal* |
+| condition | *string* | Short weather description |
+| precipitation_probability | *decimal* | 0-100% |
 
 
 Example of the tomorrow.io forecast JSON  
