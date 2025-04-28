@@ -27,14 +27,14 @@ My motivation for this was as a photographer I wanted to know the best times for
 ## Colors
 The bar color can be set for each solar event and, if you decide to show the daynight bars those too. 
 
-| Name | Color |
-| --- | --- | 
-| `day` | `'#87CEEB'` |
-| `night` | `'#87CEEB'` |
-| `goldenhour` | `'#FFE066'` |
-| `twilight` | `'#AEDFF7'` |
-| `sunrise` | `'#FFC266'` |
-| `sunset` | `'#FF7B54'` |
+| Name | Color | Swatch |
+| --- | --- | --- |
+| `day` | `'#87CEEB'` | <span style="color: #87CEEB">█</span> |
+| `night` | `'#000000'` | <span style="color: #000000">█</span> |
+| `goldenhour` | `'#FFE066'` | <span style="color: #FFE066;">█</span> |
+| `twilight` | `'#AEDFF7'` | <span style="color: #AEDFF7;">█</span> |
+| `sunrise` | `'#FFC266'` | <span style="color: #FFC266;">█</span> |
+| `sunset` | `'#FF7B54'` | <span style="color: #FF7B54;">█</span> |
 
 
 # Installation
