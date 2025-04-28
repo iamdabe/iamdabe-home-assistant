@@ -1,0 +1,452 @@
+button_card_templates:
+  solar_hourly:
+    variables:
+      location: zone.home
+      width: 300
+      height: 70
+      hour_slices: 5
+      hour_group: 3
+      show_solar_hours: true
+      show_solar_names: true
+      show_hour_labels: true
+      show_daynight_bars: true
+      colors:
+        day: '#87CEEB'
+        night: '#000000'
+        goldenhour: '#FFE066'
+        twilight: '#AEDFF7'
+        sunrise: '#FFC266'
+        sunset: '#FF7B54'
+    show_label: false
+    show_state: false
+    show_name: false
+    show_icon: false
+    styles:
+      card:
+        - padding: 16px
+        - text-align: left
+        - height: 100%
+        - font-size: var(--paper-font-body1)
+      grid:
+        - grid-template-columns: 1fr auto
+        - grid-template-areas: '''solarEvents'''
+        - justify-items: center
+      custom_fields:
+        solarEvents:
+          - justify-items: center
+    custom_fields:
+      solarEvents: |
+        [[[
+          const width = variables.width || 300;
+          const height = variables.height || 70;  
+          const hourSlices = variables.hour_slices || 5;
+          const hourGroup = variables.hour_group || 3;
+          const showSolarHours = variables.show_solar_hours ?? true;
+          const showSolarNames = variables.show_solar_names ?? true;
+          const showHours = variables.show_hour_labels ?? true;
+          const showDayNightBars = variables.show_daynight_bars ?? true;
+          const paddingVertical = showHours ? 30 : 0;
+          const paddingHorizontal = 25;
+
+          const location = states[variables.location] ?? {}; 
+          const lat = location?.attributes?.latitude ?? 0;    
+          const lon = location?.attributes?.longitude ?? 0; 
+          
+          const defaultColorMap = {
+            day: '#87CEEB',
+            night: '#000000',
+            goldenhour: '#FFE066',
+            twilight: '#AEDFF7',
+            sunrise: '#FFC266', 
+            sunset: '#FF7B54' 
+          };
+
+          const colorMap = { ...defaultColorMap, ...variables.colors };
+
+          // Prepare the data for the SVG rendering.
+          // groupedValues: Array representing grouped hour interval
+          // allValues: Contains individual hour points spanning the groupedValues
+          // allDates: Individual date defining distinct day boundaries
+
+          const { groupedValues, allValues, allDates } = prepareValues(generateDateData());
+
+          // Calculate the solar events spanning the dates specified
+          const solar = calculateSolarTimes(lat, lon, allDates);
+
+          // Calculate the necessary parameters for rendering the chart:
+          // - totalSteps: Number of intervals between data points
+          // - pxPerStep: Number of pixels per step based on the drawable width and total steps
+          // - startTime and endTime: Define the start and end time for the data range, with current time snapped to the hour
+          const totalSteps = allValues.length - 1;
+          const drawableWidth = width - paddingHorizontal;
+          const pxPerStep = drawableWidth / totalSteps;
+          const startTime = new Date(allValues[0].datetime);
+          const currentTime = new Date(new Date().setMinutes(0, 0, 0, 0));
+          const endTime = new Date(allValues[allValues.length - 1].datetime);
+              
+          function generateDateData() {
+            const dates = [];
+            const startDate = new Date();
+            startDate.setMinutes(0, 0, 0, 0); // Snap to the start of the hour
+
+            for (let i = 0; i < 168; i++) {
+                const forecastTime = new Date(startDate.getTime() + i * 60 * 60 * 1000);
+
+                // Adjust the datetime to local time
+                const localDatetime = new Date(forecastTime.getTime() - forecastTime.getTimezoneOffset() * 60000);
+
+                // Get local timezone offset in hours and minutes
+                const timezoneOffset = -localDatetime.getTimezoneOffset(); // Get offset in minutes
+                const sign = timezoneOffset >= 0 ? "+" : "-";
+                const hoursOffset = Math.floor(Math.abs(timezoneOffset) / 60);
+                const minutesOffset = Math.abs(timezoneOffset) % 60;
+                const timezoneString = `${sign}${String(hoursOffset).padStart(2, "0")}:${String(minutesOffset).padStart(2, "0")}`;
+
+                // Create the ISO string with the local timezone
+                const localISOString = localDatetime.toISOString().replace("Z", timezoneString);
+
+                dates.push({
+                    datetime: localISOString // This is now in local time with the correct timezone
+                });
+            }
+
+            return dates;
+          }
+
+          function prepareValues(data, count = hourSlices, step = hourGroup) {
+            step = Math.max(1, step);
+            count = Math.max(1, count);
+
+            const currentHour = new Date();
+            currentHour.setMinutes(0, 0, 0, 0);
+
+            // Filter the data to only include future entries (from current hour onward)
+            const futureForecasts = data.filter(entry => {
+                const entryTime = new Date(entry.datetime);
+                return entryTime >= currentHour;
+            });
+
+            // If no future forecasts, return empty arrays
+            if (futureForecasts.length === 0) return { groupedValues: [], allValues: [], allDates: [] };
+
+            const groupedValues = [];
+            let lastUsedTime = null;
+
+            // Create grouped values based on the provided step and count
+            for (let i = 0; i < futureForecasts.length && groupedValues.length < count; i += step) {
+                const forecastSlice = futureForecasts.slice(i, i + step);
+                if (forecastSlice.length === 0) continue;
+
+                const selectedEntry = forecastSlice[0];
+                lastUsedTime = new Date(forecastSlice[forecastSlice.length - 1].datetime);
+
+                const selectedDate = new Date(selectedEntry.datetime);
+                // Push the selected time and date without any conversion
+                groupedValues.push({
+                    datetime: selectedEntry.datetime,
+                    time: selectedDate.toLocaleTimeString([], { hour: 'numeric', hour12: true }),
+                    date: selectedDate.toLocaleDateString()
+                });
+            }
+
+            // All values up to the last used time
+            const allValues = futureForecasts.filter(entry => new Date(entry.datetime) <= lastUsedTime);
+
+            // Create allDates after groupedValues and allValues are populated
+            const allDatesSet = new Set(
+                allValues.map(entry => {
+                    const d = new Date(entry.datetime);
+                    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+                })
+            );
+            const allDates = Array.from(allDatesSet).map(timestamp => new Date(timestamp));
+
+            return { groupedValues, allValues, allDates };
+          }
+
+          function calculateSolarTimes(latitude, longitude, dateArray) {
+            // --- Helper functions ---
+            const toRadians = (deg) => deg * Math.PI / 180;
+            const toDegrees = (rad) => rad * 180 / Math.PI;
+          
+            function getDayOfYear(date) {
+              const start = new Date(date.getFullYear(), 0, 0);
+              const diff = date - start + (start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000;
+              return Math.floor(diff / (1000 * 60 * 60 * 24));
+            }
+          
+            function solarDeclination(dayOfYear) {
+              return 23.44 * Math.sin(toRadians((360 / 365) * (dayOfYear - 81)));
+            }
+          
+            function solarElevation(lat, decl, hourAngle) {
+              return toDegrees(Math.asin(
+                Math.sin(toRadians(lat)) * Math.sin(toRadians(decl)) +
+                Math.cos(toRadians(lat)) * Math.cos(toRadians(decl)) * Math.cos(toRadians(hourAngle))
+              ));
+            }
+          
+            function solarHourAngle(longitude, timeUTCMinutes) {
+              const solarNoonMinutes = 720 - (4 * longitude);
+              return (timeUTCMinutes - solarNoonMinutes) * 0.25;
+            }
+          
+            function minutesToLocalDate(baseDate, totalMinutesLocal) {
+              // Get the local midnight time
+              const localMidnight = new Date(
+                  baseDate.getFullYear(),
+                  baseDate.getMonth(),
+                  baseDate.getDate(),
+                  0, 0, 0
+              );
+          
+              // Calculate the local time in minutes based on the provided `totalMinutesLocal`
+              const localDate = new Date(localMidnight.getTime() + totalMinutesLocal * 60000);
+          
+              // Get the timezone offset in minutes, this accounts for DST
+              const timezoneOffset = localDate.getTimezoneOffset() * 60000; // Convert to milliseconds
+              const localDateWithOffset = new Date(localDate.getTime() - timezoneOffset); // Adjust for local time
+          
+              // Get components of the date in local time
+              const year = localDateWithOffset.getFullYear();
+              const month = String(localDateWithOffset.getMonth() + 1).padStart(2, '0');
+              const day = String(localDateWithOffset.getDate()).padStart(2, '0');
+              const hours = String(localDateWithOffset.getHours()).padStart(2, '0');
+              const minutes = String(localDateWithOffset.getMinutes()).padStart(2, '0');
+          
+              // Return formatted local date
+              return `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+
+            function findTransition(latitude, longitude, decl, dateObj, targetElevation, searchMorning) {
+              let bestMatch = null;
+              let bestDelta = Infinity;
+          
+              const startMinute = searchMorning ? 0 : 720;
+              const endMinute = searchMorning ? 720 : 1440;
+          
+              for (let minutes = startMinute; minutes < endMinute; minutes++) {
+                const ha = solarHourAngle(longitude, minutes);
+                const elev = solarElevation(latitude, decl, ha);
+          
+                const delta = Math.abs(elev - targetElevation);
+                if (delta < bestDelta) {
+                  bestDelta = delta;
+                  bestMatch = minutes;
+                }
+              }
+          
+              return minutesToLocalDate(dateObj, bestMatch);
+            }
+          
+            const result = {
+              goldenhour: [],
+              twilight: [],
+              sunrise: [],
+              sunset: []
+            };
+          
+            for (const dateObj of dateArray) {
+              const dayOfYear = getDayOfYear(dateObj);
+              const decl = solarDeclination(dayOfYear);
+          
+              const civilTwilightStart = findTransition(latitude, longitude, decl, dateObj, -6, true);
+              const sunrise = findTransition(latitude, longitude, decl, dateObj, 0, true);
+              const goldenHourMorningEnd = findTransition(latitude, longitude, decl, dateObj, 6, true);
+          
+              const goldenHourEveningStart = findTransition(latitude, longitude, decl, dateObj, 6, false);
+              const sunset = findTransition(latitude, longitude, decl, dateObj, 0, false);
+              const civilTwilightEnd = findTransition(latitude, longitude, decl, dateObj, -6, false);
+          
+              result.goldenhour.push(
+                [sunrise, goldenHourMorningEnd],
+                [goldenHourEveningStart, sunset]
+              );
+              result.twilight.push(
+                [civilTwilightStart, sunrise],
+                [sunset, civilTwilightEnd]
+              );
+              result.sunrise.push(sunrise);
+              result.sunset.push(sunset);
+            }
+          
+            return result;
+          }
+
+          // Convert datetime string to position on the chart
+          const timeToPosition = (timeStr) => {
+              const time = new Date(timeStr);
+              const diffMs = time - startTime; // difference in milliseconds
+              const diffHours = diffMs / (1000 * 60 * 60); // milliseconds to hours
+              return (paddingHorizontal) + (diffHours * pxPerStep);
+          };
+
+          function drawRect(start, end, color, opacity, offset) {
+              let xStart = timeToPosition(start);
+              const xEnd = timeToPosition(end);
+              const yPos = paddingVertical;
+              let rectWidth = xEnd - xStart;
+              if (rectWidth == 0) {rectWidth = 2, xStart = xStart-1}; 
+
+              return `<rect x="${xStart}" y="${yPos}" width="${rectWidth}" height="${height - paddingVertical - offset}" fill="${color}" opacity="${opacity}" />`;
+          }
+          
+          function buildTimeBars() {
+            const bars = [];
+            let lastEndTime = currentTime;  // Start from current time
+
+            const getTimeOfDayColor = (time) => {
+                const hour = new Date(time).getHours();
+                return (hour >= 6 && hour <= 18) ? colorMap['day'] : colorMap['night'];
+            };
+
+            // Add all our solar events to an array to iterate over
+            const events = [];
+            Object.entries(solar).forEach(([key, value]) => {
+              if (Array.isArray(value)) {
+                if (Array.isArray(value[0])) {
+                  value.forEach(range => {
+                    const [start, end] = range;
+                    if (new Date(start) >= currentTime) {
+                        events.push({ start, end, color: colorMap[key] || 'grey' });
+                    }
+                  });
+                } else {
+                  value.forEach(singleTime => {
+                    if (new Date(singleTime) >= currentTime) {
+                        bars.push({ start: singleTime, end: singleTime, color: colorMap[key] || 'grey', opacity: 1, offset:0});
+                    }
+                  });
+                }  
+              }
+            });
+
+            // Events must be sorted for the ordering of bars
+            events.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+            // First bar
+            if (showDayNightBars && new Date(events[0]?.start) > currentTime) {
+              const gapStart = new Date(startTime.getTime() - 2 * 60 * 60 * 1000);
+              const gapEnd = events[0].start;
+              bars.push({ start: gapStart, end: gapEnd, color: getTimeOfDayColor(currentTime), opacity: 0.1, offset: 20 });
+            }
+
+            // Gap bar between solar events
+            for (let i = 0; i < events.length; i++) {
+              const event = events[i];
+                
+              if (showDayNightBars) {
+                  if (i > 0 && new Date(event.start) > new Date(events[i - 1].end)) {
+                      const gapStart = events[i - 1].end;
+                      const gapEnd = event.start;
+                      bars.push({ start: gapStart, end: gapEnd, color: getTimeOfDayColor(gapStart), opacity: 0.1, offset: 20 });
+                  }
+              }
+
+              bars.push({ start: event.start, end: event.end, color: event.color, opacity: 0.3, offset: 20 });
+
+              // Update lastEndTime to the current event's end
+              lastEndTime = event.end;
+            }
+
+            // Final bar
+            if (showDayNightBars && new Date(lastEndTime) < endTime) {
+                const gapStart = lastEndTime;
+                const gapEnd = new Date(endTime.getTime() + 2 * 60 * 60 * 1000);        
+                bars.push({ start: gapStart, end: gapEnd, color: getTimeOfDayColor(lastEndTime), opacity: 0.1, offset: 20 });
+            }
+            
+            return bars.map(bar => drawRect(bar.start, bar.end, bar.color, bar.opacity, bar.offset)).join('');
+          }
+
+          function buildSolar() {
+            const labels = [];
+
+            for (const [key, value] of Object.entries(solar)) {
+              if (Array.isArray(value) && Array.isArray(value[0])) {
+                value.forEach(range => {
+                  const [start, end] = range;
+                  const startDateTime = new Date(start); 
+                  if (startDateTime >= currentTime) {
+                    let xPos;
+                    let anchor;
+                    let offset = 0; // how much to nudge the x position
+
+                    if (key.toLowerCase().includes('golden') && new Date(start).getHours() < 12) {
+                        // Morning Golden Hour -> align at start
+                        xPos = timeToPosition(start);
+                        anchor = "start";
+                        offset = 5; // nudge right
+                    } else if (key.toLowerCase().includes('twilight') && new Date(start).getHours() < 12) {
+                        // Morning Twilight -> align at end
+                        xPos = timeToPosition(end);
+                        anchor = "end";
+                        offset = -5; // nudge left
+                    } else if (key.toLowerCase().includes('golden') && new Date(start).getHours() >= 12) {
+                        // Evening Golden Hour -> align at end
+                        xPos = timeToPosition(end);
+                        anchor = "end";
+                        offset = -5; // nudge left
+                    } else if (key.toLowerCase().includes('twilight') && new Date(start).getHours() >= 12) {
+                        // Evening Twilight -> align at start
+                        xPos = timeToPosition(start);
+                        anchor = "start";
+                        offset = 5; // nudge right
+                    } else {
+                        xPos = timeToPosition(start);
+                        anchor = "middle";
+                    }
+
+                    const finalX = xPos + offset;
+                    
+                    let labelText = [
+                      showSolarNames ? key : '',
+                      showSolarHours ? startDateTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }) : ''
+                    ].filter(Boolean).join(' ');
+
+                    const label = `
+                        <text x="${finalX}" y="${height - 5}" text-anchor="${anchor}" font-size="12px" style="fill: ${colorMap[key] || 'grey'};">
+                        ${labelText}
+                        </text>
+                    `;
+                    labels.push(label);
+                  }
+                });
+              }
+            }
+            return labels.join('\n');
+          }
+
+          function buildLabels() {
+            if (showHours) {
+              return groupedValues.map((v, i) => {
+                const x = timeToPosition(v.datetime)
+                return `
+                  <text x="${x}" y="15" text-anchor="middle" font-size="12px" style="fill: var(--primary-text-color);">${v.time}</text>
+                `;
+              }).join('\n');
+              }
+          }
+
+          function buildTicks() {
+            return groupedValues.map((v, i) => {
+              const x = timeToPosition(v.datetime)
+              return `
+                <line x1="${x}" y1="${paddingVertical -7}" x2="${x}" y2="${paddingVertical}" stroke="var(--primary-text-color)" stroke-width="1" opacity="0.2" />
+              `;
+            }).join('\n');
+          }
+          
+          const svgOutput = [
+            buildLabels(),
+            buildTimeBars(),
+            buildSolar(),
+            buildTicks()
+          ].join('\n');
+
+          return `
+            <svg style="max-width:100%" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+              ${svgOutput}
+            </svg>
+          `.trim();
+        ]]]

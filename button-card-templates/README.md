@@ -5,3 +5,5 @@ This is a collection of my custom card templates for [custom:button-card]([https
 | Name | Preview | Description |
 |  ---  |  ---  |  ---  |
 | [hourly-forecast](./hourly-forecast/) | ![example](./hourly-forecast/example-default.png) | Generates an SVG from the weather forecast
+
+| [hourly-forecast](./hourly-solar/) | ![example](./hourly-solar/example-default.png) | Generates an SVG from the weather forecast

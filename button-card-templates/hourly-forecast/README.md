@@ -36,7 +36,7 @@ This is a custom button card template that generates an SVG by looping through t
 
 ```
 type: custom:button-card
-template: weather_hourly
+template: hourly-forecast
 variables:
   weather_forecast: sensor.weather_forecast_hourly
 ```
@@ -47,7 +47,7 @@ variables:
 
 ```
 type: custom:button-card
-template: weather_hourly
+template: hourly-forecast
 variables:
   weather_forecast: sensor.weather_forecast_hourly
   width: 200
@@ -68,7 +68,7 @@ card_mod:
 
 ```
 type: custom:button-card
-template: weather_hourly
+template: hourly-forecast
 variables:
   weather_forecast: sensor.weather_forecast_hourly
   width: 280
@@ -89,7 +89,7 @@ card_mod:
 
 ```
 type: custom:button-card
-template: weather_hourly
+template: hourly-forecast
 variables:
   weather_forecast: sensor.weather_forecast_hourly
   width: 600
@@ -110,7 +110,7 @@ If you're using sections there is a bug in button-card which means it doesn't pl
 
 ```
 type: custom:button-card
-template: weather_hourly
+template: hourly-forecast
 variables:
   weather_forecast: sensor.weather_forecast_hourly
 grid_options:
@@ -128,7 +128,7 @@ You can mix-and match the size of the card and the grouping. `hour_slice` is the
 If you want the built in weather popup to show when clicking the card add your weather provider as the entity when you configure your card
 ```
 type: custom:button-card
-template: weather_hourly
+template: hourly-forecast
 entity: weather.seytroux
 variables:
   weather_forecast: sensor.weather_forecast_hourly
