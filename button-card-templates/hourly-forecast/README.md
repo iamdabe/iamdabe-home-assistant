@@ -25,7 +25,7 @@ This is a custom button card template that generates an SVG by looping through t
 1. Install button-card - highly recommend to-do so via HACS. [custom:button-card](https://github.com/custom-cards/button-card)
 2. Add the `template-sensor.yaml` config to your `configuration.yaml`. This is for retrieving the hourly forecast. Your will need to edit and change the target `entity_id: weather.home` to your weather entity.  Restart HA or reload the template entities via Developer tools. 
 3.  To add a button card template to your dashboard you need to add them to the raw yaml of your dashboard. Edit your dashboard, click the 3 menu dots in the top right, then 'Raw Configuration editor'. This will edit the dashboard yaml. Paste the contents of `hourly-forecast.yaml` at the top. **Careful, editing this can corrupt your dashboard**. 
-4. For the icons extract `icons.zip` to `www\weather` to your home assistant config folder. 
+4. For the icons, extract `icons.zip` to `www\weather` of your home assistant config folder. 
 5. Create a new card and use the code from one of the examples below.
 6. Admire your new hourly weather chart!
 
@@ -167,3 +167,4 @@ Example of the tomorrow.io forecast JSON
 - Home Assistant - [home-assistant.io](https://www.home-assistant.io/) 
 - button-card lovelace - [custom:button-card](https://github.com/custom-cards/button-card)
 - card_mod - to fix the issue with sections layout
+
