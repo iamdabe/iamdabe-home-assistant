@@ -68,6 +68,6 @@ There's actually 3 button card templates used here. the main template: `oralb-to
 
 ## Required
 - Home Assistant - [home-assistant.io](https://www.home-assistant.io/)
-- OralB Integration - of course an oralb toothbrush with its associated HA integration - [`Oral-B`]{https://www.home-assistant.io/integrations/oralb/)
+- OralB Integration - of course an oralb toothbrush with its associated HA integration - [`Oral-B`](https://www.home-assistant.io/integrations/oralb/)
 - custom:button-card - [`custom:button-card`](https://github.com/custom-cards/button-card)
 - custom:layout-card - to fix the issue with sections layout [`custom:layout-card`](https://github.com/thomasloven/lovelace-card-mod)

@@ -10,6 +10,7 @@ button_card_templates:
         - background: transparent
         - margin: 0
         - padding: 0
+        - border: 0
       grid:
         - grid-template-columns: 1fr auto
         - grid-template-areas: '''toothbrush'''
@@ -68,7 +69,7 @@ button_card_templates:
         - '--button-card-ripple-color': none
         - padding: 10px
         - text-align: left
-        - font-size: var(--ha-font-size-m)
+        - font-size: 14px
         - height: 100%
       grid:
         - grid-template-areas: '"radial" "info"'
@@ -111,11 +112,9 @@ button_card_templates:
       info:
         card:
           type: custom:button-card
-          template: tile
-          name: '[[[ return variables.brush_name + " Brush" ]]]'
-          entity: '[[[ return entity.entity_id ]]]'
+          name: "[[[ return variables.brush_name + \" Brush\" ]]]"
+          entity: "[[[ return entity.entity_id ]]]"
           variables:
-            chip_showtime: 'off'
             value: |
               [[[
                 var goodbadtime = variables.graph_value >= 2 ? `Good time` : `Bad time`;
@@ -123,12 +122,22 @@ button_card_templates:
                 return `${goodbadtime} at ${hhmm}`;
               ]]]
           show_icon: false
+          show_label: true
+          show_name: true
           section_mode: true
           styles:
+            name:
+              - font-size: 12px
+              - opacity: 0.6
+            label:
+              - font-size: 14px
+              - font-weight: 500
             card:
+              - border: 0
               - padding: 0px
               - border-radius: 0
               - background: transparent
+          label: "[[[[ return variables.value ]]]]"
   graph_radial_raw:
     show_icon: false
     show_name: false
@@ -170,7 +179,7 @@ button_card_templates:
         graph_radial_raw:
           - align-self: center
           - justify-self: center
-          - font-size: var(--paper-font-body1_-_font-size)
+          - font-size: - font-size: 14px
     custom_fields:
       icon: |
         [[[ 
