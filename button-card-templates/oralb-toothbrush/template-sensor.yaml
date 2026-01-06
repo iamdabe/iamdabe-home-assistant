@@ -1,0 +1,109 @@
+template:
+  - triggers:
+      # Brushing finished
+      - trigger: state
+        entity_id: sensor.dave_toothbrush_duration
+        id: "finished"
+        to: "0"
+      
+      # Sector change
+      - trigger: state
+        entity_id: sensor.dave_toothbrush_sector
+        id: "sector"
+
+      # Midnight reset
+      - trigger: time
+        at: "00:00:01"
+        id: "midnight"
+
+      # Reset sector after finished
+      - trigger: state
+        entity_id: sensor.dave_toothbrush_duration
+        id: "finisheddelay"
+        to: "0"
+        for: 60
+
+    sensor:
+      - name: "Dave Toothbrush Today"
+        unique_id: "dave_toothbrush_today"
+        state: >
+          {% set brushes = this.attributes.get('brush_count', 0) %}
+          {% if trigger.id == 'finished' %}
+            {% set last_duration = trigger.from_state.state | int(0) %}
+            {% if last_duration > 60 %}
+              {{ brushes + 1 }}
+            {% else %}
+              {{ brushes }}
+            {% endif %}
+          {% elif trigger.id == 'midnight' %}
+            0
+          {% else %}
+            {{ brushes }}
+          {% endif %}
+        attributes:
+
+          brush_data: >
+            {% set arr = this.attributes.get('brush_data', []) %}
+            {% if trigger.id == 'finished' %}  
+              {% set now_time = now() %}
+              {% set hour = now_time.hour %}
+              {% if 5 <= hour < 11 %}
+                {% set name = "Morning" %}
+              {% elif 11 <= hour < 15 %}
+                {% set name = "Lunch" %}
+              {% elif 15 <= hour < 19 %}
+                {% set name = "Afternoon" %}
+              {% elif 19 <= hour < 21 %}
+                {% set name = "Evening" %}
+              {% else %}
+                {% set name = "Night" %}
+              {% endif %}
+
+              {% set last_duration = trigger.from_state.state | int(0) %}
+              {% set sectors = this.attributes.get('last_sectors_cleaned', []) %}
+              {% if last_duration > 60 %}
+                {% set new_entry = {
+                  'name': name,
+                  'duration': last_duration,
+                  'timestamp': now_time.isoformat(),
+                  'sectors': sectors
+                } %}
+                {{ arr + [new_entry] }}
+              {% else %}
+                {{ arr }}
+              {% endif %}
+            {% elif trigger.id == 'midnight' %}
+              []
+            {% else %}
+              {{ arr }}
+            {% endif %}
+
+          brush_count: >
+            {% set brushes = this.attributes.get('brush_count', 0) %}
+            {% if trigger.id == 'finished' %}
+              {% set last_duration = trigger.from_state.state | int(0) %}
+              {% if last_duration > 60 %}
+                {{ brushes + 1 }}
+              {% else %}
+                {{ brushes }}
+              {% endif %}
+            {% elif trigger.id == 'midnight' %}
+              0
+            {% else %}
+              {{ brushes }}
+            {% endif %}
+
+          last_sectors_cleaned: >
+            {% set arr = this.attributes.get('last_sectors_cleaned', []) %}
+            {% if trigger.id == 'sector' %}
+              {% set sector = trigger.to_state.state %}
+              {% if sector != 'no sector' and sector != 'unknown' and sector not in arr %}
+                {{ arr + [sector] }}
+              {% else %}
+                {{ arr }}
+              {% endif %}
+            {% elif trigger.id in ['midnight', 'finisheddelay'] %}
+              []
+            {% else %}
+              {{ arr }}
+            {% endif %}

@@ -1,0 +1,226 @@
+button_card_templates:
+  oralb-toothbrush:
+    section_mode: true
+    show_icon: false
+    show_name: false
+    variables:
+      toothbrush_today: 
+    styles:
+      card:
+        - background: transparent
+        - margin: 0
+        - padding: 0
+      grid:
+        - grid-template-columns: 1fr auto
+        - grid-template-areas: '''toothbrush'''
+    custom_fields:
+      toothbrush:
+        card:
+          type: custom:layout-card
+          layout_type: grid
+          layout:
+            grid-template-columns: repeat(auto-fit, 48.5%)
+            grid-gap: 12px
+            margin: 0
+            padding: 0
+          cards: |
+            [[[
+              const sensor = states[variables.toothbrush_today];
+              const brushData = Array.isArray(sensor?.attributes?.brush_data)
+                ? sensor.attributes.brush_data
+                : [];
+          
+              const cards = brushData.map(entry => ({
+                type: "custom:button-card",
+                template: "card_toothbrush_brushing",
+                entity: variables.toothbrush_today,
+                variables: {
+                  graph_value: Number(((entry.duration || 0) / 60).toFixed(1)),
+                  brush_duration: entry.duration || 0,
+                  brush_timestamp: entry.timestamp
+                    ? new Date(entry.timestamp).toISOString()
+                    : null,
+                  brush_name: entry.name || "",
+                  brush_sectors: Array.isArray(entry.sectors) ? entry.sectors : []
+                },
+                card_mod: {
+                  style: ":host {--masonry-view-card-margin: 0;};"
+                }
+              }));
+          
+              return cards;
+            ]]]
+  card_toothbrush_brushing:
+    section_mode: true
+    show_state: false
+    show_name: false
+    show_icon: false
+    variables:
+      brush_duration: null
+      brush_name: null
+      brush_timestamp: null
+      brush_sectors: null
+      graph_value: 1
+    styles:
+      card:
+        - '--button-card-ripple-pressed-opacity': 0
+        - '--button-card-ripple-hover-opacity': 0
+        - '--button-card-ripple-color': none
+        - padding: 10px
+        - text-align: left
+        - font-size: var(--ha-font-size-m)
+        - height: 100%
+      grid:
+        - grid-template-areas: '"radial" "info"'
+        - grid-template-columns: 1fr auto
+        - justify-items: center
+      custom_fields:
+        bar:
+          - width: 100%
+    custom_fields:
+      radial:
+        card:
+          type: custom:button-card
+          entity: '[[[ return entity.entity_id ]]]'
+          template: graph_radial_raw
+          variables:
+            graph_radial_raw_value: '[[[ return variables.graph_value || 0 ]]]'
+            graph_radial_raw_unit_of_measurement: mins
+            graph_radial_raw_min: 0
+            graph_radial_raw_max: 2
+            graph_radial_raw_name: ''
+            graph_radial_raw_icon: null
+            graph_radial_raw_size: 60
+            graph_radial_raw_color_from: |
+              [[[
+                const v = variables.graph_value;
+                if (v > 2.5) return "var(--deep-purple-color)";
+                if (v > 2.1) return "var(--light-green-color)";
+                if (v >= 2.0) return "var(--light-blue-color)";
+                return "var(--pink-color)";
+              ]]]
+            graph_radial_raw_color_to: |
+              [[[
+                const v = variables.graph_value;
+                if (v > 2.5) return "var(--purple-color)";
+                if (v > 2.1) return "var(--green-color)";
+                if (v >= 2.0) return "var(--blue-color)";
+                return "var(--red-color)";
+              ]]]
+            graph_radial_raw_stroke_width: 15
+      info:
+        card:
+          type: custom:button-card
+          template: tile
+          name: '[[[ return variables.brush_name + " Brush" ]]]'
+          entity: '[[[ return entity.entity_id ]]]'
+          variables:
+            chip_showtime: 'off'
+            value: |
+              [[[
+                var goodbadtime = variables.graph_value >= 2 ? `Good time` : `Bad time`;
+                var hhmm = new Date(variables.brush_timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                return `${goodbadtime} at ${hhmm}`;
+              ]]]
+          show_icon: false
+          section_mode: true
+          styles:
+            card:
+              - padding: 0px
+              - border-radius: 0
+              - background: transparent
+  graph_radial_raw:
+    show_icon: false
+    show_name: false
+    variables:
+      graph_radial_raw_value: 0
+      graph_radial_raw_unit_of_measurement: ''
+      graph_radial_raw_min: 0
+      graph_radial_raw_max: 100
+      graph_radial_raw_name: ''
+      graph_radial_raw_icon: null
+      graph_radial_raw_size: 105
+      graph_radial_raw_color_from: '#d16ba5'
+      graph_radial_raw_color_to: '#41dfff'
+      graph_radial_raw_stroke_width: 10
+      graph_radial_raw_color_to_position: 100%
+      graph_radial_raw_rotate: -270
+    styles:
+      grid:
+        - grid-template-areas: '"graph_radial_raw icon"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+      card:
+        - background: transparent
+        - padding: 0
+        - text-align: center
+        - '--button-card-ripple-pressed-opacity': 0
+        - '--button-card-ripple-hover-opacity': 0
+        - '--button-card-ripple-color': none
+        - border: 0
+      custom_fields:
+        icon:
+          - position: absolute
+          - top: 31%
+          - left: 50%
+          - transform: translate(-50%, -50%)
+          - width: 20px
+          - height: 20px
+          - opacity: 0.6
+        graph_radial_raw:
+          - align-self: center
+          - justify-self: center
+          - font-size: var(--paper-font-body1_-_font-size)
+    custom_fields:
+      icon: |
+        [[[ 
+        if (variables.graph_radial_raw_icon){
+          return `<ha-icon icon="${variables.graph_radial_raw_icon}"></ha-icon>`
+        }
+        ]]]
+      graph_radial_raw: |
+        [[[
+          const unit = variables.graph_radial_raw_unit_of_measurement || "";
+          const value = +variables.graph_radial_raw_value || 0;
+          const colorFrom = variables.graph_radial_raw_color_from || "#d16ba5";
+          const colorTo = variables.graph_radial_raw_color_to || "#41dfff";
+          const colorToPosition = variables.graph_radial_raw_color_to_position || "100%";
+          let name = variables.graph_radial_raw_name;
+          let displayText = value;
+
+          if (variables.graph_radial_raw_icon){
+            name = '';
+          }
+          
+          const minValue = variables.graph_radial_raw_min || 0;
+          const maxValue = variables.graph_radial_raw_max || 100;
+          const percentage = Math.max(0, Math.min(100, ((value - minValue) / (maxValue - minValue)) * 100));
+
+          const size = variables.graph_radial_raw_size || 105;
+          
+          const strokeWidthVar = variables.graph_radial_raw_stroke_width || 10;
+          const strokeWidth = size / strokeWidthVar;
+          const radius = (size / 2) - strokeWidth;
+          const circumference = 2 * Math.PI * radius;
+          const offset = circumference * (1 - percentage / 100);
+          const rotateGradient = offset <= 188 ? 0 : ((offset - 188) / (377 - 188)) * -150;
+          const rotate = variables.graph_radial_raw_rotate || -270;
+          
+          return `
+            <svg style="max-width:100%" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="50%" y2="100%" gradientTransform="rotate(${rotateGradient} 0.5 0.5)">
+                <stop offset="0%" style="stop-color:${colorFrom};stop-opacity:1" />
+                <stop offset="${colorToPosition}" style="stop-color:${colorTo};stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="transparent" stroke="#000" stroke-opacity="0.15" stroke-width="${strokeWidth}"/>
+              <circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="transparent" stroke="url(#gradient)" stroke-width="${strokeWidth}" stroke-linecap="round"
+                stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(${rotate} ${size / 2} ${size / 2})"/>
+              <text x="50%" y="33%" text-anchor="middle" dy=".3em" font-size="10px" opacity="0.6" style="fill: var(--primary-text-color);">${name}</text>
+              <text x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="16px" font-weight="bold"style="fill: var(--primary-text-color);">${displayText}</text>
+              <text x="50%" y="65%" text-anchor="middle" dy=".3em" font-size="10px" opacity="0.6" style="fill: var(--primary-text-color);">${unit}</text>
+            </svg>
+          `;
+
+        ]]]              
