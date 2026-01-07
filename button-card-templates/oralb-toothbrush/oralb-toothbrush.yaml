@@ -179,7 +179,7 @@ button_card_templates:
         graph_radial_raw:
           - align-self: center
           - justify-self: center
-          - font-size: - font-size: 14px
+          - font-size: 14px
     custom_fields:
       icon: |
         [[[ 
